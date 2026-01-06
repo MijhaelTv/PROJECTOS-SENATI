@@ -9,7 +9,9 @@ import io
 
 app = Flask(__name__)
 
-MODEL_PATH = os.path.join("models", "BurntSkinClassifier.h5")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "BurntSkinClassifier.h5")
+
 model = load_model(MODEL_PATH)
 
 IMG_SIZE = (224, 224)
@@ -60,7 +62,9 @@ def predict():
     if file.filename == "":
         return "Empty file", 400
 
-    img_path = os.path.join("static", "uploaded.jpg")
+    STATIC_DIR = os.path.join(BASE_DIR, "static")
+    img_path = os.path.join(STATIC_DIR, "uploaded.jpg")
+
     file.save(img_path)
 
     img_array = preprocess_image(img_path)
@@ -115,4 +119,5 @@ def predict_cam():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
+
