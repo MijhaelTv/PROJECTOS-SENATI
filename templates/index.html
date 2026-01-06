@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clasificador de Quemaduras</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Clasificador de Quemaduras</h1>
+    <p>Sube una imagen de piel afectada para detectar el grado de quemadura:</p>
+
+    <!-- FORMULARIO ORIGINAL -->
+    <form action="/predict" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required>
+        <button type="submit">Predecir</button>
+    </form>
+
+    {% if prediction %}
+    <div class="result">
+        <h2>Resultado:</h2>
+        <p><strong>Predicción:</strong> {{ prediction }}</p>
+        <p><strong>Confianza:</strong> {{ confidence }}</p>
+        <img src="/static/{{ image_url }}" alt="Imagen subida">
+
+        <!-- ⭐ RECOMENDACIÓN PARA IMÁGENES SUBIDAS -->
+        {% if recomendacion %}
+        <p style="margin-top: 15px;">
+            <strong>Recomendación:</strong><br> {{ recomendacion }}
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <hr><br>
+
+    <!-- CÁMARA EN TIEMPO REAL -->
+    <h2>Predicción en Tiempo Real</h2>
+
+    <video id="camara" autoplay playsinline width="320" height="240" 
+           style="border: 2px solid black; border-radius: 10px;"></video>
+
+    <div id="resultado_live" 
+         style="margin-top: 20px; font-size: 20px; font-weight:bold;">
+    </div>
+
+    <!-- ⭐ RECOMENDACIÓN EN TIEMPO REAL -->
+    <div id="recomendacion_live" 
+         style="margin-top: 10px; font-size: 17px; font-weight:normal;">
+    </div>
+
+</div>
+
+<script>
+    const video = document.getElementById("camara");
+
+    // Activar cámara
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        });
+
+    // Función de predicción automática
+    async function procesarFrame() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 224;
+        canvas.height = 224;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, 224, 224);
+
+        const imagen = canvas.toDataURL("image/jpeg");
+
+        const res = await fetch("/predict_cam", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: imagen })
+        });
+
+        const data = await res.json();
+
+        // Mostrar predicción y confianza
+        document.getElementById("resultado_live").innerHTML =
+            `Predicción: ${data.prediction}<br>Confianza: ${data.confidence}`;
+
+        // ⭐ Mostrar recomendación en tiempo real
+        document.getElementById("recomendacion_live").innerHTML =
+            `<strong>Recomendación:</strong><br>${data.recomendacion}`;
+    }
+
+    // Ejecutar cada 1 segundo
+    setInterval(procesarFrame, 1000);
+</script>
+
+</body>
+</html>
